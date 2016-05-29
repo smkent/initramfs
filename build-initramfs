@@ -70,6 +70,7 @@ if [ -z "${opt_root}" ]; then
     exit 1
 fi
 
+# Determine if the root filesystem is on an encrypted device
 if [ -z "${opt_mapper_name}" ]; then
     if df -P / | grep -q '^/dev/mapper/'; then
         opt_mapper_name=$( (df -P / | grep '^/dev/mapper/' | \
@@ -95,9 +96,11 @@ dev_nodes="console null tty"
 bin_exe="busybox"
 sbin_exe=
 if [ -n "${opt_mapper_name}" ]; then
+    # Add extra tools for unlocking an encrypted root filesystem
     sbin_exe="${sbin_exe} cryptsetup dhcpcd dropbear"
 fi
 if echo "/dev/md/root" | grep -qe '^\/dev\/md'; then
+    # Add mdraid tools
     sbin_exe="${sbin_exe} mdadm"
 fi
 
@@ -117,6 +120,7 @@ mkdir -p "${temp_dir}/etc"
     echo "MAPPER_NAME=\"${opt_mapper_name}\""
 ) >> "${temp_dir}/etc/init.conf"
 
+# Copy basic set of device nodes and block device nodes
 mkdir -p "${temp_dir}/dev"
 for i in ${dev_nodes}; do
     cp -a "/dev/${i}" "${temp_dir}/dev"
@@ -126,6 +130,7 @@ for i in $(find /dev -mindepth 1 -maxdepth 1 -type b | \
     cp -a "${i}" "${temp_dir}/dev"
 done
 
+# Copy libraries needed for dynamically-linked executables
 mkdir -p "${temp_dir}/lib"
 ln -s "lib" "${temp_dir}/lib64"
 for i in $(find $(ldd $(which ${bin_exe} ${sbin_exe}) | grep -oEe '\s/[^ ]*') \
@@ -140,6 +145,7 @@ for i in $(find $(ldd $(which ${bin_exe} ${sbin_exe}) | grep -oEe '\s/[^ ]*') \
     done
 done
 
+# Copy disk and mount configuration
 mkdir -p "${temp_dir}/etc"
 cp -af /etc/fstab "${temp_dir}/etc"
 if echo "${sbin_exe}" | grep -q mdadm; then
@@ -147,13 +153,20 @@ if echo "${sbin_exe}" | grep -q mdadm; then
         cp -af /etc/mdadm.conf "${temp_dir}/etc"
     fi
 fi
+
+# Configure DHCP client
 if echo "${sbin_exe}" | grep -q dhcpcd; then
     echo "root:x:0:0:root:/root:/bin/sh" > "${temp_dir}/etc/passwd"
     cp -af /etc/dhcpcd.duid "${temp_dir}/etc"
     echo "hostname" > "${temp_dir}/etc/dhcpcd.conf"
 fi
+
+# Configure SSH server
 if echo "${sbin_exe}" | grep -q dropbear; then
     mkdir -p "${temp_dir}/etc/dropbear"
+    # Re-use the same ECDSA host key that OpenSSH uses on the current host
+    # Note: If the current machine uses an encrypted root filesystem, this
+    # stores a copy of the ssh server host key unencrypted within the initramfs
     dropbearconvert openssh dropbear \
         "/etc/ssh/ssh_host_ecdsa_key" \
         "${temp_dir}/etc/dropbear/dropbear_ecdsa_host_key"
@@ -189,6 +202,7 @@ if echo "${sbin_exe}" | grep -q dropbear; then
     fi
 fi
 
+# Copy needed executables
 mkdir -p "${temp_dir}/bin"
 for i in ${bin_exe}; do
     cp -af "$(which "${i}")" "${temp_dir}/bin"
@@ -201,6 +215,7 @@ done
 
 cp -dr files/. "${temp_dir}/"
 
+# Create initramfs image
 output_file_name=$(readlink -f "./initramfs.cpio.gz")
 cd "${temp_dir}"
 find . -print0 | cpio --null -o --format=newc | gzip -9 > "${output_file_name}"
