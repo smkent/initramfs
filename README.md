@@ -73,7 +73,7 @@ The `build-initramfs` script follows this process to create an initramfs image:
 * Install executables and dynamically loaded libraries needed within the
   initramfs
 * Create disk, DHCP client, and SSH server configuration
-  * To allow SSH login in the initramfs, authorized_keys are added from:
+  * To allow SSH login in the initramfs, authorized\_keys are added from:
     * `~/.ssh/id_rsa.pub`
     * `~/.ssh/authorized_keys`
     * Any `sshPublicKey` entries found for the specified user in the LDAP
@@ -90,3 +90,13 @@ filesystem of the current machine is encrypted, this means the SSH host key is
 now stored in the initramfs, which is unencrypted. If unauthorized access is
 gained to the physical machine, the SSH host key should be considered
 compromised even though the root filesystem may be encrypted.
+
+## References
+
+Inspiration for remote root filesystem unlock started with Debian cryptsetup's
+instructions, available on a Debian installation at
+`/usr/share/doc/cryptsetup/README.remote.gz`. This file no longer seems to be
+in current trunk for Debian's cryptsetup package, but
+[an older copy of README.remote is
+available](https://github.com/lhost/pkg-cryptsetup-debian/blob/master/debian/README.remote).
+That file details Debian-specific initramfs configuration instructions.
