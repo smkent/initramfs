@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. /init-lib.sh
+read_conf
+
+if [ -b "/dev/mapper/${MAPPER_NAME}" -o ! -x /sbin/cryptsetup ]; then
+    exit 1
+fi
+
+/sbin/cryptsetup luksOpen "${ROOT_DEVICE}" "${MAPPER_NAME}"
+if [ ! -b "/dev/mapper/${MAPPER_NAME}" ]; then
+    echo "/dev/mapper/${MAPPER_NAME} does not exist" >&2
+    exit 1
+fi
+killall cryptsetup >/dev/null 2>&1

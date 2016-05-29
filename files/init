@@ -1,0 +1,71 @@
+#!/bin/busybox sh
+
+/bin/busybox --install -s
+
+mkdir -p /dev/mapper /etc /lib /mnt/root /proc /root /run /sys /tmp /var/run /var/log
+touch /var/log/lastlog
+
+mknod /dev/random c 1 8
+mknod /dev/urandom c 1 9
+mknod /dev/mapper/control c 10 236
+
+mount -t proc none /proc
+mount -t sysfs none /sys
+echo 0 > /proc/sys/kernel/printk
+
+mdev -s
+
+. /init-lib.sh
+read_conf
+
+if [ -n "${HOSTNAME}" ]; then
+    echo "Setting hostname to ${HOSTNAME}"
+    hostname "${HOSTNAME}"
+fi
+
+if [ -x /sbin/mdadm ]; then
+    echo "Assembling arrays"
+    mdadm -As
+fi
+
+if [ -x /sbin/dhcpcd -a -x /sbin/dropbear ]; then
+    echo "Running dhcpcd"
+    /sbin/dhcpcd --nodev -w -L
+    echo "Starting dropbear"
+    echo "Machine is locked" > /tmp/banner
+    /sbin/dropbear -b /tmp/banner
+fi
+
+if [ -n "${MAPPER_NAME}" ]; then
+    /sbin/cryptsetup luksOpen "${ROOT_DEVICE}" "${MAPPER_NAME}"
+    ret=${?}
+    if [ ${ret} -ne 0 ]; then
+        echo "Warning: cryptsetup exited with code ${ret}"
+    fi
+    if [ ! -b "/dev/mapper/${MAPPER_NAME}" ]; then
+        die "/dev/mapper/${MAPPER_NAME} is not a block device"
+    fi
+    ROOT_DEVICE="/dev/mapper/${MAPPER_NAME}"
+fi
+
+if [ -r /var/run/dropbear.pid ]; then
+    kill $(cat /var/run/dropbear.pid)
+    killall dropbear >dev/null 2>&1
+fi
+if [ -x /sbin/dhcpcd -a -x /sbin/dropbear ]; then
+    killall dhcpcd
+fi
+
+mount_opts=
+if [ -f /etc/fstab ]; then
+    mount_opts=$(grep -ve '^#' /etc/fstab | awk '$2 == "/" { print $4 }')
+fi
+if [ -n "${mount_opts}" ]; then
+    mount_opts="-o ${mount_opts}"
+fi
+mount "${ROOT_DEVICE}" /mnt/root ${mount_opts}
+
+umount /proc
+umount /sys
+
+exec switch_root /mnt/root /sbin/init
