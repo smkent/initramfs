@@ -96,10 +96,9 @@ compromised even though the root filesystem may be encrypted.
 Inspiration for remote root filesystem unlock started with Debian cryptsetup's
 instructions, available on a Debian installation at
 `/usr/share/doc/cryptsetup/README.remote.gz`. This file no longer seems to be
-in current trunk for Debian's cryptsetup package, but
-[an older copy of README.remote is
-available](https://github.com/lhost/pkg-cryptsetup-debian/blob/master/debian/README.remote).
-That file details Debian-specific initramfs configuration instructions.
+Debian's current cryptsetup package, but [a copy of README.remote is
+available](/doc/debian/README.remote). That file details Debian-specific
+initramfs configuration instructions.
 
 ## License
 
