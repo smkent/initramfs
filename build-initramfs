@@ -17,9 +17,9 @@ usage() {
 lopts="mapper-name: help hostname: root: user:"
 sopts="c:hH:r:u:"
 
-getopt_out="$(getopt -n"${0}" -u --longoptions="${lopts}" "${sopts}" "${@}")"
+getopt_out="$(getopt -n"${0}" --longoptions="${lopts}" "${sopts}" "${@}")"
 [ ${?} -ne 0 ] && usage >&2
-set -- ${getopt_out}
+eval set -- "${getopt_out}"
 [ ${#} -eq 0 ] && usage >&2
 
 opt_mapper_name=
@@ -106,7 +106,7 @@ fi
 
 exit_cleanup()
 {
-    if [ -n "${temp_dir}" -a -d "${temp_dir}" ]; then
+    if [ -n "${temp_dir}" ] && [ -d "${temp_dir}" ]; then
         rm -rf "${temp_dir}"
     fi
 }
@@ -133,9 +133,18 @@ done
 # Copy libraries needed for dynamically-linked executables
 mkdir -p "${temp_dir}/lib"
 ln -s "lib" "${temp_dir}/lib64"
-for i in $(find $(ldd $(which ${bin_exe} ${sbin_exe}) | grep -oEe '\s/[^ ]*') \
-                $(find /lib/ -iname 'libnss_files*') \
-           | sort -u); do
+
+calculate_libs()
+{
+    (
+        for i in "${@}"; do
+            ldd "$(which "${i}")" | grep -oEe '\s/[^ ]*' || true
+        done
+        find /lib/ -iname 'libnss_files*'
+    ) | sort -u
+}
+
+for i in $(calculate_libs ${bin_exe} ${sbin_exe}); do
     for l in "${i}" $(readlink -f "${i}"); do
         bn="$(basename "${l}")"
         if [ -e "${temp_dir}/lib/${bn}" ]; then
@@ -170,7 +179,8 @@ if echo "${sbin_exe}" | grep -q dropbear; then
     dropbearconvert openssh dropbear \
         "/etc/ssh/ssh_host_ecdsa_key" \
         "${temp_dir}/etc/dropbear/dropbear_ecdsa_host_key"
-    mkdir -m 0700 -p "${temp_dir}/root/.ssh"
+    mkdir -p "${temp_dir}/root/.ssh"
+    chmod 0700 "${temp_dir}/root/.ssh"
     if [ -n "${opt_user}" ]; then
         # Add user's id_rsa.pub and any authorized_keys on this machine
         user_home=$(getent passwd "${opt_user}" | cut -d: -f6)

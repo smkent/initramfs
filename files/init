@@ -28,7 +28,7 @@ if [ -x /sbin/mdadm ]; then
     mdadm -As
 fi
 
-if [ -x /sbin/dhcpcd -a -x /sbin/dropbear ]; then
+if [ -x /sbin/dhcpcd ] && [ -x /sbin/dropbear ]; then
     echo "Running dhcpcd"
     /sbin/dhcpcd --nodev -w -L
     echo "Starting dropbear"
@@ -49,10 +49,10 @@ if [ -n "${MAPPER_NAME}" ]; then
 fi
 
 if [ -r /var/run/dropbear.pid ]; then
-    kill $(cat /var/run/dropbear.pid)
+    kill "$(cat /var/run/dropbear.pid)"
     killall dropbear >dev/null 2>&1
 fi
-if [ -x /sbin/dhcpcd -a -x /sbin/dropbear ]; then
+if [ -x /sbin/dhcpcd ] && [ -x /sbin/dropbear ]; then
     killall dhcpcd
 fi
 

@@ -3,7 +3,7 @@
 . /init-lib.sh
 read_conf
 
-if [ -b "/dev/mapper/${MAPPER_NAME}" -o ! -x /sbin/cryptsetup ]; then
+if [ -b "/dev/mapper/${MAPPER_NAME}" ] || [ ! -x /sbin/cryptsetup ]; then
     exit 1
 fi
 

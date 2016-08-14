@@ -10,7 +10,7 @@ die()
 read_conf()
 {
     . /etc/init.conf || die "/etc/init.conf not found"
-    if [ -n "${MAPPER_NAME}" -a -b "/dev/mapper/${MAPPER_NAME}" ]; then
+    if [ -n "${MAPPER_NAME}" ] && [ -b "/dev/mapper/${MAPPER_NAME}" ]; then
         ROOT_DEVICE="/dev/mapper/${MAPPER_NAME}"
     else
         for cmd in $(cat /proc/cmdline); do
