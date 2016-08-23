@@ -77,8 +77,8 @@ The `build-initramfs` script follows this process to create an initramfs image:
     * `~/.ssh/authorized_keys`
     * Any `sshPublicKey` entries found for the specified user in the LDAP
       database
-  * Re-use the same ECDSA host key currently in use with OpenSSH on the current
-    machine (see below for security note)
+  * Re-use the same ED25519 and RSA host keys currently in use with OpenSSH on
+    the current machine (see below for security note)
 * Package and compress initramfs image
 
 ## Security note
