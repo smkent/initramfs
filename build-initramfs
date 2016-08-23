@@ -26,7 +26,7 @@ opt_mapper_name=
 opt_root=
 opt_help=0
 opt_hostname=
-opt_user="${SUDO_USER}"
+opt_user="${SUDO_USER:-$(id -un)}"
 while [ ${#} -gt 0 ]; do
     case "${1}" in
         -c|--mapper-name)   opt_mapper_name="${2}"; shift;;
@@ -99,7 +99,7 @@ if [ -n "${opt_mapper_name}" ]; then
     # Add extra tools for unlocking an encrypted root filesystem
     sbin_exe="${sbin_exe} cryptsetup dhcpcd dropbear"
 fi
-if echo "/dev/md/root" | grep -qe '^\/dev\/md'; then
+if echo "${opt_root}" | grep -qe '^\/dev\/md'; then
     # Add mdraid tools
     sbin_exe="${sbin_exe} mdadm"
 fi
