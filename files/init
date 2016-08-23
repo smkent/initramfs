@@ -28,12 +28,13 @@ if [ -x /sbin/mdadm ]; then
     mdadm -As
 fi
 
-if [ -x /sbin/dhcpcd ] && [ -x /sbin/dropbear ]; then
+if [ -x /sbin/dhcpcd ] && [ -x /sbin/sshd ]; then
     echo "Running dhcpcd"
     /sbin/dhcpcd --nodev -w -L
-    echo "Starting dropbear"
+    echo "Starting sshd"
     echo "Machine is locked" > /tmp/banner
-    /sbin/dropbear -b /tmp/banner
+    echo "Banner /tmp/banner" >> /etc/ssh/sshd_config
+    /sbin/sshd
 fi
 
 if [ -n "${MAPPER_NAME}" ]; then
@@ -48,11 +49,11 @@ if [ -n "${MAPPER_NAME}" ]; then
     ROOT_DEVICE="/dev/mapper/${MAPPER_NAME}"
 fi
 
-if [ -r /var/run/dropbear.pid ]; then
-    kill "$(cat /var/run/dropbear.pid)"
-    killall dropbear >dev/null 2>&1
+if [ -r /var/run/sshd.pid ]; then
+    kill "$(cat /var/run/sshd.pid)"
+    killall sshd >dev/null 2>&1
 fi
-if [ -x /sbin/dhcpcd ] && [ -x /sbin/dropbear ]; then
+if [ -x /sbin/dhcpcd ] && [ -x /sbin/sshd ]; then
     killall dhcpcd
 fi
 

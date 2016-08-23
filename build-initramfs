@@ -97,7 +97,7 @@ bin_exe="busybox"
 sbin_exe=
 if [ -n "${opt_mapper_name}" ]; then
     # Add extra tools for unlocking an encrypted root filesystem
-    sbin_exe="${sbin_exe} cryptsetup dhcpcd dropbear"
+    sbin_exe="${sbin_exe} cryptsetup dhcpcd sshd"
 fi
 if echo "${opt_root}" | grep -qe '^\/dev\/md'; then
     # Add mdraid tools
@@ -171,14 +171,20 @@ if echo "${sbin_exe}" | grep -q dhcpcd; then
 fi
 
 # Configure SSH server
-if echo "${sbin_exe}" | grep -q dropbear; then
-    mkdir -p "${temp_dir}/etc/dropbear"
-    # Re-use the same ECDSA host key that OpenSSH uses on the current host
+if echo "${sbin_exe}" | grep -q sshd; then
+    # Re-use the same host key(s) that OpenSSH uses on the current host
     # Note: If the current machine uses an encrypted root filesystem, this
     # stores a copy of the ssh server host key unencrypted within the initramfs
-    dropbearconvert openssh dropbear \
-        "/etc/ssh/ssh_host_ecdsa_key" \
-        "${temp_dir}/etc/dropbear/dropbear_ecdsa_host_key"
+    mkdir -p "${temp_dir}/etc/ssh"
+    for k in rsa ed25519; do
+        cp -v "/etc/ssh/ssh_host_${k}_key" "/etc/ssh/ssh_host_${k}_key.pub" \
+            "${temp_dir}/etc/ssh/"
+    done
+    (
+        echo "UsePrivilegeSeparation no"
+        echo "PidFile /var/run/sshd.pid"
+    ) > "${temp_dir}/etc/ssh/sshd_config"
+    chmod 0600 "${temp_dir}/etc/ssh/sshd_config"
     mkdir -p "${temp_dir}/root/.ssh"
     chmod 0700 "${temp_dir}/root/.ssh"
     if [ -n "${opt_user}" ]; then

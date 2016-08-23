@@ -27,8 +27,7 @@ To build an initramfs image, the following programs must be installed:
   * [cryptsetup](https://gitlab.com/cryptsetup/cryptsetup/)
     (`sys-fs/cryptsetup`)
   * [dhcpcd](http://roy.marples.name/projects/dhcpcd) (`net-misc/dhcpcd`)
-  * [dropbear](https://matt.ucc.asn.au/dropbear/dropbear.html)
-    (`net-misc/dropbear`)
+  * [OpenSSH](http://www.openssh.com/) (`net-misc/openssh`)
 * If the root filesystem is on a Linux software RAID (md) device:
   * [mdadm](http://neil.brown.name/blog/mdadm) (`sys-fs/mdadm`)
 
@@ -84,11 +83,11 @@ The `build-initramfs` script follows this process to create an initramfs image:
 
 ## Security note
 
-When the SSH server (dropbear) is configured in the initramfs, the same ECDSA
-host key that OpenSSH currently uses is copied to the initramfs. If the root
-filesystem of the current machine is encrypted, this means the SSH host key is
-now stored in the initramfs, which is unencrypted. If unauthorized access is
-gained to the physical machine, the SSH host key should be considered
+When the SSH server is configured in the initramfs, the same ED25519 and RSA
+host keys that OpenSSH currently uses are copied to the initramfs. If the root
+filesystem of the current machine is encrypted, this means the SSH host keys
+are now stored in the initramfs, which is unencrypted. If unauthorized access
+is gained to the physical machine, the SSH host keys should be considered
 compromised even though the root filesystem may be encrypted.
 
 ## References

@@ -3,7 +3,7 @@
 die()
 {
     echo "${1}" >&2
-    killall dropbear >dev/null 2>&1
+    killall sshd >dev/null 2>&1
     exit 1
 }
 
