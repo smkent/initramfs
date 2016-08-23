@@ -9,13 +9,14 @@ usage() {
         echo "    -H|--hostname     Hostname to be set when initramfs starts"
         echo "    -h|--help         Show this usage"
         echo "    -r|--root         Root block device"
+        echo "    -s|--static-root  ROOT directory with static binaries"
         echo "    -u|--user         Allow ssh login using this user's keys"
     )
     exit 1
 }
 
-lopts="mapper-name: help hostname: root: user:"
-sopts="c:hH:r:u:"
+lopts="mapper-name: help hostname: root: static-root: user:"
+sopts="c:hH:r:s:u:"
 
 getopt_out="$(getopt -n"${0}" --longoptions="${lopts}" "${sopts}" "${@}")"
 [ ${?} -ne 0 ] && usage >&2
@@ -26,6 +27,7 @@ opt_mapper_name=
 opt_root=
 opt_help=0
 opt_hostname=
+opt_static_root=
 opt_user="${SUDO_USER:-$(id -un)}"
 while [ ${#} -gt 0 ]; do
     case "${1}" in
@@ -33,6 +35,7 @@ while [ ${#} -gt 0 ]; do
         -h|--help)          opt_help=1;;
         -H|--hostname)      opt_hostname="${2}"; shift;;
         -r|--root)          opt_root="${2}"; shift;;
+        -s|--static-root)   opt_static_root="${2%%/}"; shift;;
         -u|--user)          opt_user="${2}"; shift;;
         --)                 shift; break;;
         -*)                 opt_help=1;;
@@ -134,11 +137,21 @@ done
 mkdir -p "${temp_dir}/lib"
 ln -s "lib" "${temp_dir}/lib64"
 
+locate_binary()
+{
+    which_path=$(which "${1}")
+    if [ -x "${opt_static_root}${which_path}" ]; then
+        echo "${opt_static_root}${which_path}"
+        return
+    fi
+    echo "${which_path}"
+}
+
 calculate_libs()
 {
     (
         for i in "${@}"; do
-            ldd "$(which "${i}")" | grep -oEe '\s/[^ ]*' || true
+            ldd "$(locate_binary "${i}")" | grep -oEe '\s/[^ ]*' || true
         done
         find /lib/ -iname 'libnss_files*'
     ) | sort -u
@@ -221,12 +234,12 @@ fi
 # Copy needed executables
 mkdir -p "${temp_dir}/bin"
 for i in ${bin_exe}; do
-    cp -af "$(which "${i}")" "${temp_dir}/bin"
+    cp -vaf "$(locate_binary "${i}")" "${temp_dir}/bin"
 done
 
 mkdir -p "${temp_dir}/sbin"
 for i in ${sbin_exe}; do
-    cp -af "$(which "${i}")" "${temp_dir}/sbin"
+    cp -vaf "$(locate_binary "${i}")" "${temp_dir}/sbin"
 done
 
 cp -dr files/. "${temp_dir}/"
