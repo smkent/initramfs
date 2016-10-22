@@ -55,6 +55,9 @@ if [ -r /var/run/sshd.pid ]; then
 fi
 if [ -x /sbin/dhcpcd ] && [ -x /sbin/sshd ]; then
     killall dhcpcd
+    for i in $(ifconfig | grep -ve '^$' -e '^ ' -e '^lo ' | cut -d' ' -f1); do
+        ifconfig "${i}" down
+    done
 fi
 
 mount_opts=
