@@ -178,7 +178,10 @@ fi
 
 # Configure DHCP client
 if echo "${sbin_exe}" | grep -q dhcpcd; then
-    echo "root:x:0:0:root:/root:/bin/sh" > "${temp_dir}/etc/passwd"
+    (
+        echo "root:x:0:0:root:/root:/bin/sh"
+        echo "sshd:x:22:22:sshd:/var/empty:/bin/false"
+    ) > "${temp_dir}/etc/passwd"
     cp -af /etc/dhcpcd.duid "${temp_dir}/etc"
     echo "hostname" > "${temp_dir}/etc/dhcpcd.conf"
 fi
@@ -194,12 +197,12 @@ if echo "${sbin_exe}" | grep -q sshd; then
             "${temp_dir}/etc/ssh/"
     done
     (
-        echo "UsePrivilegeSeparation no"
         echo "PidFile /var/run/sshd.pid"
     ) > "${temp_dir}/etc/ssh/sshd_config"
     chmod 0600 "${temp_dir}/etc/ssh/sshd_config"
     mkdir -p "${temp_dir}/root/.ssh"
     chmod 0700 "${temp_dir}/root/.ssh"
+    mkdir -m 0755 -p "${temp_dir}/var/empty"
     if [ -n "${opt_user}" ]; then
         # Add user's id_rsa.pub and any authorized_keys on this machine
         user_home=$(getent passwd "${opt_user}" | cut -d: -f6)
