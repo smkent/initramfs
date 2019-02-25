@@ -139,7 +139,7 @@ ln -s "lib" "${temp_dir}/lib64"
 
 locate_binary()
 {
-    which_path=$(which "${1}")
+    which_path=$(command -v "${1}")
     if [ -x "${opt_static_root}${which_path}" ]; then
         echo "${opt_static_root}${which_path}"
         return
