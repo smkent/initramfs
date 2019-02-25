@@ -102,7 +102,7 @@ if [ -n "${opt_mapper_name}" ]; then
     # Add extra tools for unlocking an encrypted root filesystem
     sbin_exe="${sbin_exe} cryptsetup dhcpcd sshd"
 fi
-if echo "${opt_root}" | grep -qe '^\/dev\/md'; then
+if findfs "${opt_root}" | grep -qe '^\/dev\/md'; then
     # Add mdraid tools
     sbin_exe="${sbin_exe} mdadm"
 fi
