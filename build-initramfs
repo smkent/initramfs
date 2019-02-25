@@ -50,11 +50,22 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# Determine if the root filesystem is on an encrypted device
+if [ -z "${opt_mapper_name}" ]; then
+    if df -P / | grep -q '^/dev/mapper/'; then
+        opt_mapper_name=$( (df -P / | grep '^/dev/mapper/' | \
+                            awk '{print $1}' | grep -o '[^\/]*$') || /bin/true)
+        if [ -z "${opt_mapper_name}" ]; then
+            opt_mapper_name="root_crypt"
+        fi
+    fi
+fi
+
 # Locate root device
 if [ -z "${opt_root}" ]; then
     if df -P / | grep -q '^/dev/mapper/'; then
-        # Determine block device backing this mapper device, if posible
-        opt_root=$(cryptsetup status root_crypt | \
+        # Determine block device backing this mapper device, if possible
+        opt_root=$(cryptsetup status "${opt_mapper_name}" | \
                    awk '/^\s*device:/ {print $2}')
     else
         opt_root=$(df -P / | awk 'NR==2 {print $1}')
@@ -71,17 +82,6 @@ fi
 if [ -z "${opt_root}" ]; then
     echo "Error: Unable to determine root device." >&2
     exit 1
-fi
-
-# Determine if the root filesystem is on an encrypted device
-if [ -z "${opt_mapper_name}" ]; then
-    if df -P / | grep -q '^/dev/mapper/'; then
-        opt_mapper_name=$( (df -P / | grep '^/dev/mapper/' | \
-                            awk '{print $1}' | grep -o '[^\/]*$') || /bin/true)
-        if [ -z "${opt_mapper_name}" ]; then
-            opt_mapper_name="root_crypt"
-        fi
-    fi
 fi
 
 if [ -z "${opt_hostname}" ]; then
